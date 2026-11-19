@@ -1,0 +1,100 @@
+The ``1-my_list`` module
+========================
+
+Using ``MyList``
+----------------
+
+Get the class:
+
+    >>> MyList = __import__('1-my_list').MyList
+
+MyList is a subclass of list:
+
+    >>> issubclass(MyList, list)
+    True
+    >>> isinstance(MyList(), list)
+    True
+
+Basic usage, as in the example:
+
+    >>> my_list = MyList()
+    >>> my_list.append(1)
+    >>> my_list.append(4)
+    >>> my_list.append(2)
+    >>> my_list.append(3)
+    >>> my_list.append(5)
+    >>> print(my_list)
+    [1, 4, 2, 3, 5]
+    >>> my_list.print_sorted()
+    [1, 2, 3, 4, 5]
+
+The original list is not modified:
+
+    >>> print(my_list)
+    [1, 4, 2, 3, 5]
+
+print_sorted prints, it does not return the list:
+
+    >>> result = my_list.print_sorted()
+    [1, 2, 3, 4, 5]
+    >>> print(result)
+    None
+
+The printed result is a plain list, not a MyList:
+
+    >>> type(sorted(my_list)) is list
+    True
+
+Empty list:
+
+    >>> MyList().print_sorted()
+    []
+
+One element:
+
+    >>> MyList([7]).print_sorted()
+    [7]
+
+Already sorted:
+
+    >>> MyList([1, 2, 3]).print_sorted()
+    [1, 2, 3]
+
+Reverse order:
+
+    >>> MyList([5, 4, 3, 2, 1]).print_sorted()
+    [1, 2, 3, 4, 5]
+
+Negative numbers:
+
+    >>> MyList([3, -1, 0, -7, 2]).print_sorted()
+    [-7, -1, 0, 2, 3]
+
+Duplicates:
+
+    >>> MyList([2, 1, 2, 1]).print_sorted()
+    [1, 1, 2, 2]
+
+Built with the list constructor, still keeps its original order:
+
+    >>> other = MyList([3, 1, 2])
+    >>> other.print_sorted()
+    [1, 2, 3]
+    >>> other
+    [3, 1, 2]
+
+Mixed types that cannot be compared raise a TypeError:
+
+    >>> MyList([1, "a"]).print_sorted()
+    Traceback (most recent call last):
+    ...
+    TypeError: '<' not supported between instances of 'str' and 'int'
+
+Too many arguments to the constructor (only the error type is
+checked, since the message wording differs between Python versions):
+
+    >>> try:
+    ...     MyList([1], [2])
+    ... except TypeError:
+    ...     print("TypeError")
+    TypeError

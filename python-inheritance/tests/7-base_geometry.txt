@@ -1,0 +1,143 @@
+The ``7-base_geometry`` module
+==============================
+
+Using ``BaseGeometry``
+----------------------
+
+Get the class:
+
+    >>> BaseGeometry = __import__('7-base_geometry').BaseGeometry
+    >>> bg = BaseGeometry()
+
+area() is not implemented in the base class:
+
+    >>> bg.area()
+    Traceback (most recent call last):
+    ...
+    Exception: area() is not implemented
+
+Valid integers return nothing:
+
+    >>> bg.integer_validator("my_int", 12)
+    >>> bg.integer_validator("width", 89)
+    >>> bg.integer_validator("one", 1)
+    >>> bg.integer_validator("big", 10 ** 20)
+
+String value:
+
+    >>> bg.integer_validator("name", "John")
+    Traceback (most recent call last):
+    ...
+    TypeError: name must be an integer
+
+Zero:
+
+    >>> bg.integer_validator("age", 0)
+    Traceback (most recent call last):
+    ...
+    ValueError: age must be greater than 0
+
+Negative:
+
+    >>> bg.integer_validator("distance", -4)
+    Traceback (most recent call last):
+    ...
+    ValueError: distance must be greater than 0
+
+Float, even a whole one:
+
+    >>> bg.integer_validator("f", 3.0)
+    Traceback (most recent call last):
+    ...
+    TypeError: f must be an integer
+
+Booleans are not accepted as integers:
+
+    >>> bg.integer_validator("flag", True)
+    Traceback (most recent call last):
+    ...
+    TypeError: flag must be an integer
+
+    >>> bg.integer_validator("flag", False)
+    Traceback (most recent call last):
+    ...
+    TypeError: flag must be an integer
+
+None:
+
+    >>> bg.integer_validator("none", None)
+    Traceback (most recent call last):
+    ...
+    TypeError: none must be an integer
+
+Containers:
+
+    >>> bg.integer_validator("lst", [3])
+    Traceback (most recent call last):
+    ...
+    TypeError: lst must be an integer
+
+    >>> bg.integer_validator("tpl", (3, 4))
+    Traceback (most recent call last):
+    ...
+    TypeError: tpl must be an integer
+
+    >>> bg.integer_validator("st", {3, 4})
+    Traceback (most recent call last):
+    ...
+    TypeError: st must be an integer
+
+    >>> bg.integer_validator("dct", {"key": 3})
+    Traceback (most recent call last):
+    ...
+    TypeError: dct must be an integer
+
+Infinity and NaN are floats:
+
+    >>> bg.integer_validator("inf", float("inf"))
+    Traceback (most recent call last):
+    ...
+    TypeError: inf must be an integer
+
+    >>> bg.integer_validator("nan", float("nan"))
+    Traceback (most recent call last):
+    ...
+    TypeError: nan must be an integer
+
+The type check happens before the value check:
+
+    >>> bg.integer_validator("neg_float", -1.5)
+    Traceback (most recent call last):
+    ...
+    TypeError: neg_float must be an integer
+
+Missing arguments (only the error type is checked, since the
+message wording differs between Python versions):
+
+    >>> try:
+    ...     bg.integer_validator()
+    ... except TypeError:
+    ...     print("TypeError")
+    TypeError
+
+    >>> try:
+    ...     bg.integer_validator("only_name")
+    ... except TypeError:
+    ...     print("TypeError")
+    TypeError
+
+Too many arguments:
+
+    >>> try:
+    ...     bg.integer_validator("a", 1, 2)
+    ... except TypeError:
+    ...     print("TypeError")
+    TypeError
+
+area() takes no arguments:
+
+    >>> try:
+    ...     bg.area(1)
+    ... except TypeError:
+    ...     print("TypeError")
+    TypeError
