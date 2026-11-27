@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+"""Fetch https://alu-intranet.hbtn.io/status with requests and describe it.
+
+The script prints the type of the body text and the text itself.
+"""
+import requests
+
+
+if __name__ == "__main__":
+    response = requests.get("https://alu-intranet.hbtn.io/status")
+    print("Body response:")
+    print("\t- type: {}".format(type(response.text)))
+    print("\t- content: {}".format(response.text))
