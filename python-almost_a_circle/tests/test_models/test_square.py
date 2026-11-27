@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 """Unittests for the Square class defined in models/square.py."""
 import io
+import json
+import os
 import unittest
 from contextlib import redirect_stdout
 from models.base import Base
@@ -251,6 +253,157 @@ class TestSquareToDictionary(unittest.TestCase):
         s2.update(**s1.to_dictionary())
         self.assertEqual(str(s2), "[Square] (1) 2/1 - 10")
         self.assertFalse(s1 == s2)
+
+
+class TestSquareJson(unittest.TestCase):
+    """Tests for to_json_string and from_json_string called on Square."""
+
+    def test_to_json_string(self):
+        """Square.to_json_string converts Square dictionaries."""
+        d = Square(10, 2, 1, 1).to_dictionary()
+        self.assertEqual(json.loads(Square.to_json_string([d])), [d])
+
+    def test_to_json_string_none_and_empty(self):
+        """Square.to_json_string returns '[]' for None and []."""
+        self.assertEqual(Square.to_json_string(None), "[]")
+        self.assertEqual(Square.to_json_string([]), "[]")
+
+    def test_from_json_string(self):
+        """Square.from_json_string reverses to_json_string."""
+        data = [{"id": 89, "size": 10, "x": 1, "y": 2}]
+        self.assertEqual(
+            Square.from_json_string(Square.to_json_string(data)), data)
+
+    def test_from_json_string_none_and_empty(self):
+        """Square.from_json_string returns [] for None and ''."""
+        self.assertEqual(Square.from_json_string(None), [])
+        self.assertEqual(Square.from_json_string(""), [])
+
+
+class TestSquareSaveToFile(unittest.TestCase):
+    """Tests for Square.save_to_file."""
+
+    def setUp(self):
+        """Reset the counter and remove Square.json before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Square.json"):
+            os.remove("Square.json")
+
+    def tearDown(self):
+        """Remove Square.json after each test."""
+        if os.path.exists("Square.json"):
+            os.remove("Square.json")
+
+    def read(self):
+        """Return the raw text of Square.json."""
+        with open("Square.json", "r", encoding="utf-8") as f:
+            return f.read()
+
+    def test_none(self):
+        """Square.save_to_file(None) writes an empty list."""
+        Square.save_to_file(None)
+        self.assertEqual(self.read(), "[]")
+
+    def test_empty_list(self):
+        """Square.save_to_file([]) writes an empty list."""
+        Square.save_to_file([])
+        self.assertEqual(self.read(), "[]")
+
+    def test_one_square(self):
+        """Square.save_to_file([Square(1)]) writes that square."""
+        Square.save_to_file([Square(1)])
+        self.assertEqual(json.loads(self.read()),
+                         [{"id": 1, "size": 1, "x": 0, "y": 0}])
+
+    def test_two_squares(self):
+        """Square.save_to_file writes every square in the list."""
+        s1 = Square(5)
+        s2 = Square(7, 9, 1)
+        Square.save_to_file([s1, s2])
+        self.assertEqual(json.loads(self.read()),
+                         [s1.to_dictionary(), s2.to_dictionary()])
+
+    def test_overwrite(self):
+        """Saving again replaces the old content of Square.json."""
+        Square.save_to_file([Square(1), Square(2)])
+        Square.save_to_file(None)
+        self.assertEqual(self.read(), "[]")
+
+    def test_file_name(self):
+        """Square.save_to_file writes to Square.json, not Rectangle.json."""
+        Square.save_to_file([Square(1)])
+        self.assertTrue(os.path.exists("Square.json"))
+
+
+class TestSquareCreate(unittest.TestCase):
+    """Tests for Square.create."""
+
+    def setUp(self):
+        """Reset the Base object counter before each test."""
+        Base._Base__nb_objects = 0
+
+    def test_id_only(self):
+        """Square.create(**{'id': 89}) sets only the id."""
+        s = Square.create(**{"id": 89})
+        self.assertEqual(str(s), "[Square] (89) 0/0 - 1")
+
+    def test_id_size(self):
+        """Square.create(**{'id': 89, 'size': 1})."""
+        s = Square.create(**{"id": 89, "size": 1})
+        self.assertEqual(str(s), "[Square] (89) 0/0 - 1")
+
+    def test_id_size_x(self):
+        """Square.create(**{'id': 89, 'size': 1, 'x': 2})."""
+        s = Square.create(**{"id": 89, "size": 1, "x": 2})
+        self.assertEqual(str(s), "[Square] (89) 2/0 - 1")
+
+    def test_all(self):
+        """Square.create(**{'id': 89, 'size': 1, 'x': 2, 'y': 3})."""
+        s = Square.create(**{"id": 89, "size": 1, "x": 2, "y": 3})
+        self.assertEqual(str(s), "[Square] (89) 2/3 - 1")
+        self.assertIsInstance(s, Square)
+
+    def test_new_object(self):
+        """create returns a different object with the same values."""
+        s1 = Square(3, 1, 2)
+        s2 = Square.create(**s1.to_dictionary())
+        self.assertEqual(str(s1), str(s2))
+        self.assertIsNot(s1, s2)
+
+
+class TestSquareLoadFromFile(unittest.TestCase):
+    """Tests for Square.load_from_file."""
+
+    def setUp(self):
+        """Reset the counter and remove Square.json before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Square.json"):
+            os.remove("Square.json")
+
+    def tearDown(self):
+        """Remove Square.json after each test."""
+        if os.path.exists("Square.json"):
+            os.remove("Square.json")
+
+    def test_no_file(self):
+        """Square.load_from_file() returns [] when the file is missing."""
+        self.assertEqual(Square.load_from_file(), [])
+
+    def test_file_exists(self):
+        """Square.load_from_file() rebuilds the saved squares."""
+        inputs = [Square(5), Square(7, 9, 1)]
+        Square.save_to_file(inputs)
+        outputs = Square.load_from_file()
+        self.assertEqual(len(outputs), 2)
+        for before, after in zip(inputs, outputs):
+            self.assertIsInstance(after, Square)
+            self.assertIsNot(before, after)
+            self.assertEqual(str(before), str(after))
+
+    def test_saved_none(self):
+        """Loading after Square.save_to_file(None) returns []."""
+        Square.save_to_file(None)
+        self.assertEqual(Square.load_from_file(), [])
 
 
 if __name__ == "__main__":

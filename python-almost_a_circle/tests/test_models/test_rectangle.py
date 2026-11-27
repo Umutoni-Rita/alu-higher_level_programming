@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 """Unittests for the Rectangle class defined in models/rectangle.py."""
 import io
+import json
+import os
 import unittest
 from contextlib import redirect_stdout
 from models.base import Base
@@ -362,6 +364,158 @@ class TestRectangleToDictionary(unittest.TestCase):
         """to_dictionary takes no argument."""
         with self.assertRaises(TypeError):
             Rectangle(1, 1).to_dictionary(1)
+
+
+class TestRectangleJson(unittest.TestCase):
+    """Tests for to_json_string and from_json_string called on Rectangle."""
+
+    def test_to_json_string(self):
+        """Rectangle.to_json_string converts Rectangle dictionaries."""
+        d = Rectangle(10, 7, 2, 8, 1).to_dictionary()
+        self.assertEqual(json.loads(Rectangle.to_json_string([d])), [d])
+
+    def test_to_json_string_none_and_empty(self):
+        """Rectangle.to_json_string returns '[]' for None and []."""
+        self.assertEqual(Rectangle.to_json_string(None), "[]")
+        self.assertEqual(Rectangle.to_json_string([]), "[]")
+
+    def test_from_json_string(self):
+        """Rectangle.from_json_string reverses to_json_string."""
+        data = [{"id": 89, "width": 10, "height": 4}]
+        self.assertEqual(
+            Rectangle.from_json_string(Rectangle.to_json_string(data)), data)
+
+    def test_from_json_string_none_and_empty(self):
+        """Rectangle.from_json_string returns [] for None and ''."""
+        self.assertEqual(Rectangle.from_json_string(None), [])
+        self.assertEqual(Rectangle.from_json_string(""), [])
+
+
+class TestRectangleSaveToFile(unittest.TestCase):
+    """Tests for Rectangle.save_to_file."""
+
+    def setUp(self):
+        """Reset the counter and remove Rectangle.json before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Rectangle.json"):
+            os.remove("Rectangle.json")
+
+    def tearDown(self):
+        """Remove Rectangle.json after each test."""
+        if os.path.exists("Rectangle.json"):
+            os.remove("Rectangle.json")
+
+    def read(self):
+        """Return the raw text of Rectangle.json."""
+        with open("Rectangle.json", "r", encoding="utf-8") as f:
+            return f.read()
+
+    def test_none(self):
+        """Rectangle.save_to_file(None) writes an empty list."""
+        Rectangle.save_to_file(None)
+        self.assertEqual(self.read(), "[]")
+
+    def test_empty_list(self):
+        """Rectangle.save_to_file([]) writes an empty list."""
+        Rectangle.save_to_file([])
+        self.assertEqual(self.read(), "[]")
+
+    def test_one_rectangle(self):
+        """Rectangle.save_to_file([Rectangle(1, 2)]) writes it."""
+        Rectangle.save_to_file([Rectangle(1, 2)])
+        self.assertEqual(json.loads(self.read()),
+                         [{"id": 1, "width": 1, "height": 2, "x": 0, "y": 0}])
+
+    def test_two_rectangles(self):
+        """Rectangle.save_to_file writes every rectangle in the list."""
+        r1 = Rectangle(10, 7, 2, 8)
+        r2 = Rectangle(2, 4)
+        Rectangle.save_to_file([r1, r2])
+        self.assertEqual(json.loads(self.read()),
+                         [r1.to_dictionary(), r2.to_dictionary()])
+
+    def test_overwrite(self):
+        """Saving again replaces the old content of Rectangle.json."""
+        Rectangle.save_to_file([Rectangle(1, 1), Rectangle(2, 2)])
+        Rectangle.save_to_file(None)
+        self.assertEqual(self.read(), "[]")
+
+
+class TestRectangleCreate(unittest.TestCase):
+    """Tests for Rectangle.create."""
+
+    def setUp(self):
+        """Reset the Base object counter before each test."""
+        Base._Base__nb_objects = 0
+
+    def test_id_only(self):
+        """Rectangle.create(**{'id': 89}) sets only the id."""
+        r = Rectangle.create(**{"id": 89})
+        self.assertEqual(str(r), "[Rectangle] (89) 0/0 - 1/1")
+
+    def test_id_width(self):
+        """Rectangle.create(**{'id': 89, 'width': 1})."""
+        r = Rectangle.create(**{"id": 89, "width": 1})
+        self.assertEqual(str(r), "[Rectangle] (89) 0/0 - 1/1")
+
+    def test_id_width_height(self):
+        """Rectangle.create(**{'id': 89, 'width': 1, 'height': 2})."""
+        r = Rectangle.create(**{"id": 89, "width": 1, "height": 2})
+        self.assertEqual(str(r), "[Rectangle] (89) 0/0 - 1/2")
+
+    def test_id_width_height_x(self):
+        """Rectangle.create(**{'id': 89, 'width': 1, 'height': 2, 'x': 3})."""
+        r = Rectangle.create(**{"id": 89, "width": 1, "height": 2, "x": 3})
+        self.assertEqual(str(r), "[Rectangle] (89) 3/0 - 1/2")
+
+    def test_all(self):
+        """Rectangle.create with every key set."""
+        r = Rectangle.create(
+            **{"id": 89, "width": 1, "height": 2, "x": 3, "y": 4})
+        self.assertEqual(str(r), "[Rectangle] (89) 3/4 - 1/2")
+        self.assertIsInstance(r, Rectangle)
+
+    def test_new_object(self):
+        """create returns a different object with the same values."""
+        r1 = Rectangle(3, 5, 1)
+        r2 = Rectangle.create(**r1.to_dictionary())
+        self.assertEqual(str(r1), str(r2))
+        self.assertIsNot(r1, r2)
+
+
+class TestRectangleLoadFromFile(unittest.TestCase):
+    """Tests for Rectangle.load_from_file."""
+
+    def setUp(self):
+        """Reset the counter and remove Rectangle.json before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Rectangle.json"):
+            os.remove("Rectangle.json")
+
+    def tearDown(self):
+        """Remove Rectangle.json after each test."""
+        if os.path.exists("Rectangle.json"):
+            os.remove("Rectangle.json")
+
+    def test_no_file(self):
+        """Rectangle.load_from_file() returns [] when the file is missing."""
+        self.assertEqual(Rectangle.load_from_file(), [])
+
+    def test_file_exists(self):
+        """Rectangle.load_from_file() rebuilds the saved rectangles."""
+        inputs = [Rectangle(10, 7, 2, 8), Rectangle(2, 4)]
+        Rectangle.save_to_file(inputs)
+        outputs = Rectangle.load_from_file()
+        self.assertEqual(len(outputs), 2)
+        for before, after in zip(inputs, outputs):
+            self.assertIsInstance(after, Rectangle)
+            self.assertIsNot(before, after)
+            self.assertEqual(str(before), str(after))
+
+    def test_saved_none(self):
+        """Loading after Rectangle.save_to_file(None) returns []."""
+        Rectangle.save_to_file(None)
+        self.assertEqual(Rectangle.load_from_file(), [])
 
 
 if __name__ == "__main__":
