@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 """This module defines the Base class, the parent of every shape class.
 
-It manages the id of each object and provides JSON serialization
+It manages the id of each object and provides JSON and CSV serialization
 helpers to save instances to files and load them back.
 """
+import csv
 import json
 
 
@@ -84,3 +85,50 @@ class Base:
         except FileNotFoundError:
             return []
         return [cls.create(**d) for d in list_dicts]
+
+    @classmethod
+    def csv_fields(cls):
+        """Return the CSV column order used for instances of cls.
+
+        Square: id,size,x,y - Rectangle (and others): id,width,height,x,y.
+        """
+        if cls.__name__ == "Square":
+            return ["id", "size", "x", "y"]
+        return ["id", "width", "height", "x", "y"]
+
+    @classmethod
+    def save_to_file_csv(cls, list_objs):
+        """Write list_objs to <Class name>.csv, one object per line.
+
+        If list_objs is None or empty, "[]" is written, like the JSON version.
+        """
+        with open(cls.__name__ + ".csv", "w", newline="",
+                  encoding="utf-8") as f:
+            if list_objs is None or len(list_objs) == 0:
+                f.write("[]")
+                return
+            writer = csv.DictWriter(f, fieldnames=cls.csv_fields())
+            for obj in list_objs:
+                writer.writerow(obj.to_dictionary())
+
+    @classmethod
+    def load_from_file_csv(cls):
+        """Return a list of cls instances loaded from <Class name>.csv.
+
+        Returns an empty list if the file does not exist or holds no objects.
+        """
+        try:
+            with open(cls.__name__ + ".csv", "r", newline="",
+                      encoding="utf-8") as f:
+                content = f.read()
+        except FileNotFoundError:
+            return []
+        if content.strip() in ("", "[]"):
+            return []
+        reader = csv.DictReader(content.splitlines(),
+                                fieldnames=cls.csv_fields())
+        instances = []
+        for row in reader:
+            values = {key: int(value) for key, value in row.items()}
+            instances.append(cls.create(**values))
+        return instances

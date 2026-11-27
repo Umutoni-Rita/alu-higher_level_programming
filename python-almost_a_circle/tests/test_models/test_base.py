@@ -14,8 +14,9 @@ def reset_counter():
 
 
 def remove_files():
-    """Delete any JSON file the tests may have created."""
-    for name in ("Base.json", "Rectangle.json", "Square.json"):
+    """Delete any JSON or CSV file the tests may have created."""
+    for name in ("Base.json", "Rectangle.json", "Square.json",
+                 "Base.csv", "Rectangle.csv", "Square.csv"):
         if os.path.exists(name):
             os.remove(name)
 
@@ -296,6 +297,64 @@ class TestLoadFromFile(unittest.TestCase):
         """load_from_file takes no argument."""
         with self.assertRaises(TypeError):
             Rectangle.load_from_file("Rectangle.json")
+
+
+class TestCsv(unittest.TestCase):
+    """Tests for Base.save_to_file_csv, load_from_file_csv, csv_fields."""
+
+    def setUp(self):
+        """Reset the counter and remove old CSV files before each test."""
+        reset_counter()
+        remove_files()
+
+    def tearDown(self):
+        """Remove the CSV files created by the tests."""
+        remove_files()
+
+    def test_csv_fields(self):
+        """Each class uses its own column order."""
+        self.assertEqual(Rectangle.csv_fields(),
+                         ["id", "width", "height", "x", "y"])
+        self.assertEqual(Square.csv_fields(), ["id", "size", "x", "y"])
+
+    def test_file_names(self):
+        """The file is named after the class that calls the method."""
+        Rectangle.save_to_file_csv([Rectangle(1, 1)])
+        Square.save_to_file_csv([Square(1)])
+        self.assertTrue(os.path.exists("Rectangle.csv"))
+        self.assertTrue(os.path.exists("Square.csv"))
+
+    def test_base_none(self):
+        """Base.save_to_file_csv(None) writes an empty list to Base.csv."""
+        Base.save_to_file_csv(None)
+        with open("Base.csv", "r", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "[]")
+
+    def test_load_no_file(self):
+        """A missing CSV file gives an empty list."""
+        self.assertEqual(Rectangle.load_from_file_csv(), [])
+        self.assertEqual(Square.load_from_file_csv(), [])
+
+    def test_load_empty_file(self):
+        """An empty CSV file gives an empty list."""
+        open("Rectangle.csv", "w").close()
+        self.assertEqual(Rectangle.load_from_file_csv(), [])
+
+    def test_round_trip_ids(self):
+        """Ids follow the 100-main example (dummies use ids 3 and 4)."""
+        Rectangle.save_to_file_csv([Rectangle(10, 7, 2, 8), Rectangle(2, 4)])
+        Rectangle.load_from_file_csv()
+        squares = [Square(5), Square(7, 9, 1)]
+        self.assertEqual([s.id for s in squares], [5, 6])
+        Square.save_to_file_csv(squares)
+        loaded = Square.load_from_file_csv()
+        self.assertEqual([str(s) for s in loaded],
+                         ["[Square] (5) 0/0 - 5", "[Square] (6) 9/1 - 7"])
+
+    def test_save_no_args(self):
+        """Calling save_to_file_csv without argument raises TypeError."""
+        with self.assertRaises(TypeError):
+            Rectangle.save_to_file_csv()
 
 
 if __name__ == "__main__":

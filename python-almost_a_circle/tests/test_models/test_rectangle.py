@@ -518,5 +518,78 @@ class TestRectangleLoadFromFile(unittest.TestCase):
         self.assertEqual(Rectangle.load_from_file(), [])
 
 
+class TestRectangleCsv(unittest.TestCase):
+    """Tests for Rectangle.save_to_file_csv and load_from_file_csv."""
+
+    def setUp(self):
+        """Reset the counter and remove Rectangle.csv before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Rectangle.csv"):
+            os.remove("Rectangle.csv")
+
+    def tearDown(self):
+        """Remove Rectangle.csv after each test."""
+        if os.path.exists("Rectangle.csv"):
+            os.remove("Rectangle.csv")
+
+    def read(self):
+        """Return the lines of Rectangle.csv without line endings."""
+        with open("Rectangle.csv", "r", encoding="utf-8") as f:
+            return f.read().splitlines()
+
+    def test_save_none(self):
+        """Rectangle.save_to_file_csv(None) saves an empty list."""
+        Rectangle.save_to_file_csv(None)
+        self.assertEqual(self.read(), ["[]"])
+
+    def test_save_empty_list(self):
+        """Rectangle.save_to_file_csv([]) saves an empty list."""
+        Rectangle.save_to_file_csv([])
+        self.assertEqual(self.read(), ["[]"])
+
+    def test_save_one(self):
+        """Rectangle.save_to_file_csv([Rectangle(1, 2)]) writes one line."""
+        Rectangle.save_to_file_csv([Rectangle(1, 2)])
+        self.assertEqual(self.read(), ["1,1,2,0,0"])
+
+    def test_save_format(self):
+        """Each line follows the format <id>,<width>,<height>,<x>,<y>."""
+        Rectangle.save_to_file_csv([Rectangle(10, 7, 2, 8), Rectangle(2, 4)])
+        self.assertEqual(self.read(), ["1,10,7,2,8", "2,2,4,0,0"])
+
+    def test_save_overwrite(self):
+        """Saving again replaces the old content of Rectangle.csv."""
+        Rectangle.save_to_file_csv([Rectangle(1, 1), Rectangle(2, 2)])
+        Rectangle.save_to_file_csv([Rectangle(3, 4, 5, 6, 7)])
+        self.assertEqual(self.read(), ["7,3,4,5,6"])
+
+    def test_load_no_file(self):
+        """Rectangle.load_from_file_csv() returns [] without a file."""
+        self.assertEqual(Rectangle.load_from_file_csv(), [])
+
+    def test_load_after_none(self):
+        """Loading after Rectangle.save_to_file_csv(None) returns []."""
+        Rectangle.save_to_file_csv(None)
+        self.assertEqual(Rectangle.load_from_file_csv(), [])
+
+    def test_load_round_trip(self):
+        """Rectangle.load_from_file_csv() rebuilds the saved rectangles."""
+        inputs = [Rectangle(10, 7, 2, 8), Rectangle(2, 4)]
+        Rectangle.save_to_file_csv(inputs)
+        outputs = Rectangle.load_from_file_csv()
+        self.assertEqual(len(outputs), 2)
+        for before, after in zip(inputs, outputs):
+            self.assertIsInstance(after, Rectangle)
+            self.assertIsNot(before, after)
+            self.assertEqual(str(before), str(after))
+
+    def test_loaded_values_are_ints(self):
+        """Values read back from the CSV file are integers."""
+        Rectangle.save_to_file_csv([Rectangle(1, 2, 3, 4, 5)])
+        r = Rectangle.load_from_file_csv()[0]
+        self.assertEqual(r.to_dictionary(),
+                         {"id": 5, "width": 1, "height": 2, "x": 3, "y": 4})
+
+
 if __name__ == "__main__":
     unittest.main()

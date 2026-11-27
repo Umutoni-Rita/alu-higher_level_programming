@@ -406,5 +406,78 @@ class TestSquareLoadFromFile(unittest.TestCase):
         self.assertEqual(Square.load_from_file(), [])
 
 
+class TestSquareCsv(unittest.TestCase):
+    """Tests for Square.save_to_file_csv and Square.load_from_file_csv."""
+
+    def setUp(self):
+        """Reset the counter and remove Square.csv before each test."""
+        Base._Base__nb_objects = 0
+        if os.path.exists("Square.csv"):
+            os.remove("Square.csv")
+
+    def tearDown(self):
+        """Remove Square.csv after each test."""
+        if os.path.exists("Square.csv"):
+            os.remove("Square.csv")
+
+    def read(self):
+        """Return the lines of Square.csv without line endings."""
+        with open("Square.csv", "r", encoding="utf-8") as f:
+            return f.read().splitlines()
+
+    def test_save_none(self):
+        """Square.save_to_file_csv(None) saves an empty list."""
+        Square.save_to_file_csv(None)
+        self.assertEqual(self.read(), ["[]"])
+
+    def test_save_empty_list(self):
+        """Square.save_to_file_csv([]) saves an empty list."""
+        Square.save_to_file_csv([])
+        self.assertEqual(self.read(), ["[]"])
+
+    def test_save_one(self):
+        """Square.save_to_file_csv([Square(1)]) writes id,size,x,y."""
+        Square.save_to_file_csv([Square(1)])
+        self.assertEqual(self.read(), ["1,1,0,0"])
+
+    def test_save_format(self):
+        """Each line follows the format <id>,<size>,<x>,<y>."""
+        Square.save_to_file_csv([Square(5), Square(7, 9, 1)])
+        self.assertEqual(self.read(), ["1,5,0,0", "2,7,9,1"])
+
+    def test_save_overwrite(self):
+        """Saving again replaces the old content of Square.csv."""
+        Square.save_to_file_csv([Square(1), Square(2)])
+        Square.save_to_file_csv([Square(3, 1, 2, 9)])
+        self.assertEqual(self.read(), ["9,3,1,2"])
+
+    def test_load_no_file(self):
+        """Square.load_from_file_csv() returns [] when the file is missing."""
+        self.assertEqual(Square.load_from_file_csv(), [])
+
+    def test_load_after_none(self):
+        """Loading after Square.save_to_file_csv(None) returns []."""
+        Square.save_to_file_csv(None)
+        self.assertEqual(Square.load_from_file_csv(), [])
+
+    def test_load_round_trip(self):
+        """Square.load_from_file_csv() rebuilds the saved squares."""
+        inputs = [Square(5), Square(7, 9, 1)]
+        Square.save_to_file_csv(inputs)
+        outputs = Square.load_from_file_csv()
+        self.assertEqual(len(outputs), 2)
+        for before, after in zip(inputs, outputs):
+            self.assertIsInstance(after, Square)
+            self.assertIsNot(before, after)
+            self.assertEqual(str(before), str(after))
+
+    def test_loaded_values_are_ints(self):
+        """Values read back from the CSV file are integers."""
+        Square.save_to_file_csv([Square(4, 1, 2, 3)])
+        s = Square.load_from_file_csv()[0]
+        self.assertEqual(s.to_dictionary(),
+                         {"id": 3, "size": 4, "x": 1, "y": 2})
+
+
 if __name__ == "__main__":
     unittest.main()
