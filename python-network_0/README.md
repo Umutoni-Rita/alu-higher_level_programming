@@ -16,5 +16,5 @@ Every script takes the URL as its first argument, for example:
 | `1-body.sh` | Displays the body of the response, only for a 200 status code. |
 | `2-delete.sh` | Sends a `DELETE` request and displays the body. |
 | `3-methods.sh` | Displays the HTTP methods the server accepts for the URL. |
-| `4-header.sh` | Sends the header `X-HolbertonSchool-User-Id: 98` and displays the body. |
+| `4-header.sh` | Sends the header `X-School-User-Id: 98` and displays the body. |
 | `5-post_params.sh` | Sends `email` and `subject` as POST data and displays the body. |
