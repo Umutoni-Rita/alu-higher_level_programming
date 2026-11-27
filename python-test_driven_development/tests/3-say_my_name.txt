@@ -1,0 +1,60 @@
+The ``3-say_my_name`` module
+============================
+
+Using ``say_my_name``
+---------------------
+
+Import the function:
+
+    >>> say_my_name = __import__('3-say_my_name').say_my_name
+
+First and last name:
+
+    >>> say_my_name("John", "Smith")
+    My name is John Smith
+
+    >>> say_my_name("Walter", "White")
+    My name is Walter White
+
+Only a first name (the output ends with a space, which doctest
+cannot show reliably, so we check the exact text instead):
+
+    >>> import io, contextlib
+    >>> buf = io.StringIO()
+    >>> with contextlib.redirect_stdout(buf):
+    ...     say_my_name("Bob")
+    >>> buf.getvalue()
+    'My name is Bob \n'
+
+A non-string first name raises TypeError:
+
+    >>> say_my_name(12, "White")
+    Traceback (most recent call last):
+        ...
+    TypeError: first_name must be a string
+
+A non-string last name raises TypeError:
+
+    >>> say_my_name("Walter", 12)
+    Traceback (most recent call last):
+        ...
+    TypeError: last_name must be a string
+
+    >>> say_my_name("Walter", None)
+    Traceback (most recent call last):
+        ...
+    TypeError: last_name must be a string
+
+When both are invalid, first_name is reported first:
+
+    >>> say_my_name(None, 5)
+    Traceback (most recent call last):
+        ...
+    TypeError: first_name must be a string
+
+Missing arguments:
+
+    >>> say_my_name()
+    Traceback (most recent call last):
+        ...
+    TypeError: say_my_name() missing 1 required positional argument: 'first_name'
